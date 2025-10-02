@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "foo-api"
+version = "0.1.0"
+description = ""
+authors = ["moera-sudo <https://github.com/moera-sudo>"]
+package-mode = false
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.12.6"
+
+pydantic = "^2.11.7"
+pydantic-settings = "^2.10.1"
+fastapi = "^0.118.0"
+asyncpg = "^0.30.0"
+tortoise-orm = {extras = ["asyncpg"], version = "^0.25.1"}
+passlib = "^1.7.4"
+python-jose = "^3.5.0"
+bcrypt = "3.2.2"
+aerich = "^0.9.1"
+colorlog = "^6.9.0"
+uvicorn = "^0.37.0"
+httptools = "^0.6.4"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.2"
+pytest-asyncio = "^1.2.0"
+ruff = "^0.13.2"
+
+[tool.ruff]
+line-length = 100
+ignore = ["F401", "E501", "I001", "F841"]

@@ -1,0 +1,3 @@
+MODELS = [
+    'src.user.models'
+]
