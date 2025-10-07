@@ -5,6 +5,7 @@ import 'package:foo/src/pages/undefinedpage/not_ready_page.dart';
 import 'package:foo/src/routes/app_routes.dart';
 import 'package:foo/src/pages/regpage/reg_page.dart';
 import 'package:foo/src/pages/authpage/auth_page.dart';
+import 'package:foo/src/pages/goodspage/product_page.dart';
 
 // TODO ДОБАВИТЬ СЮДА НОВЫЕ МАРШРУТЫ
 
@@ -27,6 +28,10 @@ class AppRouter {
       case AppRoutes.welcome:
         return MaterialPageRoute(
           builder: (_) => WelcomePage());
+
+      case AppRoutes.product:
+        return MaterialPageRoute(
+          builder: (_) => ProductPage());
 
       default:
         return MaterialPageRoute(

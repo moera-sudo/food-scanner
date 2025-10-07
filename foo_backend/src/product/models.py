@@ -2,6 +2,8 @@ from tortoise import fields
 from tortoise.models import Model
 from tortoise.validators import MinValueValidator, MaxValueValidator
 
+from ..history.models import History
+
 import enum
 
 class NutriScoreEnum(enum.Enum):
@@ -35,6 +37,8 @@ class Product(Model):
     nutriscore = fields.CharEnumField(NutriScoreEnum)
 
     image_url = fields.TextField()
+
+    history: fields.ReverseRelation["History"]
 
     class Meta:
         table = 'products'

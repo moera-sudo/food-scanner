@@ -5,6 +5,9 @@ import logging
 
 from .user.router import router as AuthRouter
 from .product.router import router as ProductRouter
+from .history.router import router as HistoryRouter
+from .search.router import router as SearchRouter
+from .comments.router import router as CommentRouter
 
 logger = logging.getLogger(__name__)
 
@@ -25,3 +28,6 @@ async def ping_response():
 
 router.include_router(AuthRouter)
 router.include_router(ProductRouter)
+router.include_router(HistoryRouter)
+router.include_router(SearchRouter)
+router.include_router(CommentRouter)

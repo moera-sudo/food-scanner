@@ -1,7 +1,13 @@
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Depends
+from typing import Annotated, Optional
 
 from .repo import ProductRepository
 from .schemas import ProductResponse, ProductRequest
+
+from ..history.repo import HistoryRepository
+from ..user.models import User
+from ..dependencies import get_current_user_optional
+
 
 router = APIRouter(
     prefix='/product',
@@ -34,8 +40,14 @@ async def new_product_view(
     return await ProductRepository.create_product(data=data, file=file)
 
 @router.get('/get/{product_id}', status_code=200, response_model=ProductResponse)
-async def get_product_view(product_id: int):
-    return await ProductRepository.get_product(product_id=product_id)
+async def get_product_view(product_id: int, current_user: Annotated[Optional[User], Depends(get_current_user_optional)]):
+    
+    product = await ProductRepository.get_product(product_id=product_id)
+
+    if current_user:
+        await HistoryRepository.create_history_note(user=current_user, product=product.id)
+
+    return product
 
 @router.get('/get/image/{product_id}', status_code=200)
 async def get_product_image_view(product_id: int):

@@ -5,10 +5,12 @@ ProductResponse
 
 """
 from fastapi import Form
-from typing import Optional, Literal
+from typing import Optional, Literal, List
 from pydantic import BaseModel, Field, conint
 
 from .models import NutriScoreEnum
+
+from ..comments.schemas import CommentResponse
 
 class ProductRequest(BaseModel):
     name: str = Field(..., max_length=64)
@@ -35,6 +37,8 @@ class ProductResponse(BaseModel):
 
     rating: float
     nutriscore: NutriScoreEnum
+
+    comments: list[CommentResponse] = []
 
     model_config = {
         "from_attributes": True

@@ -1,6 +1,8 @@
 from tortoise import fields
 from tortoise.models import Model
 
+from ..history.models import History
+
 import uuid
 
 class User(Model):
@@ -9,6 +11,9 @@ class User(Model):
     email = fields.CharField(max_length=64, null=False, unique=True)
     password = fields.CharField(max_length=128, null=False)
     created_at = fields.DatetimeField(auto_now_add=True)
+
+    history: fields.ReverseRelation["History"]
+
 
     class Meta:
         table = "users"

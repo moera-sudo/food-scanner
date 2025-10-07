@@ -14,6 +14,7 @@ import 'package:foo/src/pages/welcomepage/welcome_page.dart';
 
 // I'm gonna clear useless imports later
 
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
