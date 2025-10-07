@@ -1,3 +1,4 @@
 MODELS = [
-    'src.user.models'
+    'src.user.models',
+    'src.product.models'
 ]

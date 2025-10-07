@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 
 from .user.router import router as AuthRouter
+from .product.router import router as ProductRouter
 
 logger = logging.getLogger(__name__)
 
@@ -23,3 +24,4 @@ async def ping_response():
     }
 
 router.include_router(AuthRouter)
+router.include_router(ProductRouter)
