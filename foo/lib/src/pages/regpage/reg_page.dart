@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:foo/src/routes/app_routes.dart';
 import 'package:foo/src/themes/theme.dart';
 import 'package:foo/src/routes/router.dart';
+import 'package:foo/src/core/config/interceptors/auth_interceptor.dart';
+import 'package:foo/src/services/auth_service.dart';
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -19,19 +22,34 @@ class _RegisterPageState extends State<RegisterPage> {
 
   String? errorMessage;
 
-  void _register() {
-    setState(() {
-      if (passwordController.text != confirmPasswordController.text) {
-        errorMessage = "Пароли не совпадают";
-      } else {
-        errorMessage = null;
-        // TODO: добавить регистрацию
+void _register() async {
+  setState(() async {
+    if (passwordController.text != confirmPasswordController.text) {
+      errorMessage = "Пароли не совпадают";
+    } else {
+      errorMessage = null;
+
+      final authService = AuthService(AuthInterceptor());
+      final success = await authService.register(
+        name: nameController.text.trim(),
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Регистрация успешна")),
         );
+        Navigator.pushReplacementNamed(context, AppRoutes.auth);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ошибка регистрации")),
+        );
       }
-    });
-  }
+    }
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {

@@ -1,196 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:foo/src/models/product.dart'; // Импортируем нашу новую модель
+import 'package:foo/src/services/product_service.dart'; // Импортируем сервис
 import 'package:foo/src/widgets/RatingCards/nutri_score_card.dart';
 import 'package:foo/src/widgets/RatingCards/rating_card.dart';
 import 'package:foo/src/widgets/commentsBar/comments_bar.dart';
 
-class ProductPage extends StatelessWidget{
-  ProductPage({super.key});
-  
-  final product_info = [
-    {"id": 1, "title": "Кофеварка", "desc":"Эта кофеварка позволяет готовить до 5 чашек кофе. Мощность 800 Вт, съёмный резервуар для воды, компактный дизайн.", "image": "https://www.timberk.ru/upload/resize_cache/webp/iblock/f58/e3rbcxpgxhxg9m0dklg8h1cu90qfia4b.webp"},
-  ];
-  final productComments = [
-    Comment(
-      author: "Иван",
-      text: "Очень понравилась кофеварка!",
-      date: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    Comment(
-      author: "Мария",
-      text: "Шумная, но кофе вкусный ☕",
-      date: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
+// 1. Превращаем в StatefulWidget, чтобы управлять состоянием загрузки
+class ProductPage extends StatefulWidget {
+  final int productId; // Страница теперь должна знать ID продукта для запроса
 
-  // ! I will make here a response to backend
+  const ProductPage({super.key, required this.productId});
+
+  @override
+  State<ProductPage> createState() => _ProductPageState();
+}
+
+class _ProductPageState extends State<ProductPage> {
+  // 2. Создаем переменные для управления асинхронной операцией
+  late Future<Product> _productFuture;
+  final ProductService _productService = ProductService();
+
+  @override
+  void initState() {
+    super.initState();
+    // 3. Запускаем загрузку данных при создании экрана
+    _productFuture = _loadProduct();
+  }
+
+  // Метод для загрузки продукта с сервера
+  Future<Product> _loadProduct() async {
+    try {
+      // Вызываем метод сервиса для получения данных
+      final productData = await _productService.getProduct(widget.productId);
+      // Преобразуем полученный JSON в наш объект Product
+      return Product.fromJson(productData);
+    } catch (e) {
+      // В случае ошибки, FutureBuilder сможет ее обработать
+      throw Exception('Не удалось загрузить продукт: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.network(
-              product_info[0]["image"] as String,
-              height: 250,
-              width: double.infinity,
-              fit: BoxFit.cover),
-            SizedBox(height: 16),
-            Padding(
-              padding: EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    product_info[0]["title"] as String,
-                    style: Theme.of(context).textTheme.headlineLarge),
-                  SizedBox(height: 8,),
-                  Text(
-                    product_info[0]["desc"] as String,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),                  
-                ],
-              ),
-              ),
-              SizedBox(height: 15,),
-              Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                // Выравниваем все дочерние элементы по левому краю
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ЗАГОЛОВОК
-                  const Text(
-                    "Nutrition Facts",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
+      // 4. Используем FutureBuilder для отображения разных состояний
+      body: FutureBuilder<Product>(
+        future: _productFuture,
+        builder: (context, snapshot) {
+          // Пока данные грузятся, показываем индикатор загрузки
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                  // РАЗДЕЛИТЕЛЬ
-                  const Divider(color: Color(0xFF2E2E2E), thickness: 1),
-                  const SizedBox(height: 8),
+          // Если произошла ошибка, показываем текст ошибки
+          if (snapshot.hasError) {
+            return Center(child: Text('Ошибка: ${snapshot.error}'));
+          }
 
-                  // ПЕРВЫЙ РЯД: Calories / Fat
-                  Row(
+          // Если данных нет (маловероятно при отсутствии ошибки, но для надежности)
+          if (!snapshot.hasData) {
+            return const Center(child: Text('Продукт не найден'));
+          }
+
+          // Если данные успешно загружены
+          final product = snapshot.data!;
+          final imageUrl = _productService.getImageUrl(product.id);
+
+          // Возвращаем ваш UI, но с данными из объекта `product`
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Image.network(
+                  imageUrl, // <-- ДАННЫЕ С СЕРВЕРА
+                  height: 250,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                     return Container(height: 250, color: Colors.grey.shade800, child: const Icon(Icons.image_not_supported, size: 50));
+                  },
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Expanded заставляет дочерний виджет занять всё доступное пространство
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Calories", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("52", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Fat", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("0.2g", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
+                      Text(
+                        product.name, // <-- ДАННЫЕ С СЕРВЕРА
+                        style: Theme.of(context).textTheme.headlineLarge),
+                      const SizedBox(height: 8),
+                      Text(
+                        product.description, // <-- ДАННЫЕ С СЕРВЕРА
+                        style: Theme.of(context).textTheme.bodyMedium,
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  // РАЗДЕЛИТЕЛЬ
-                  const Divider(color: Color(0xFF2E2E2E), thickness: 1),
-                  const SizedBox(height: 8),
-
-                  Row(
+                ),
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Protein", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("0.3g", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Carbs", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("14g", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
+                      const Text("Nutrition Facts", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      const Divider(color: Color(0xFF2E2E2E), thickness: 1),
+                      const SizedBox(height: 8),
+                      // Используем данные из `product`
+                      _buildNutritionRow("Calories", product.calories.toString(), "Fat", "${product.fat}g"),
+                      const SizedBox(height: 8),
+                      const Divider(color: Color(0xFF2E2E2E), thickness: 1),
+                      const SizedBox(height: 8),
+                      _buildNutritionRow("Protein", "${product.protein}g", "Carbs", "${product.carbs}g"),
+                      const SizedBox(height: 8),
+                      const Divider(color: Color(0xFF2E2E2E), thickness: 1),
+                      const SizedBox(height: 8),
+                      _buildNutritionRow("Sugar", "${product.sugar}g", "Fiber", "${product.fiber}g"),
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  // РАЗДЕЛИТЕЛЬ
-                  const Divider(color: Color(0xFF2E2E2E), thickness: 1),
-                  const SizedBox(height: 8),
-
-                  // ТРЕТИЙ РЯД: Sugar / Fiber
-                  Row(
+                ),
+                const SizedBox(height: 15),
+                Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Sugar", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("10g", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text("Fiber", style: TextStyle(color: Colors.grey)),
-                            SizedBox(height: 4),
-                            Text("2.4g", style: TextStyle(fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 15),
-            Padding(
-              padding: EdgeInsets.all(15),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Column(
-                    children: [
-                      Text("Рейтинг"),
-                      SizedBox(height: 10,),
-                      RatingCard(value: 7.5),
+                      Column(children: [
+                        const Text("Рейтинг"),
+                        const SizedBox(height: 10),
+                        RatingCard(value: product.rating), // <-- ДАННЫЕ С СЕРВЕРА
                       ]),
-                  SizedBox(width: 60),
-                  Column(
-                    children: [
-                      Text("Nutri-Score"),
-                      SizedBox(height: 10,),
-                      NutriScoreCard(grade: "A"),
+                      const SizedBox(width: 60),
+                      Column(children: [
+                        const Text("Nutri-Score"),
+                        const SizedBox(height: 10),
+                        NutriScoreCard(grade: product.nutriscore), // <-- ДАННЫЕ С СЕРВЕРА
+                      ]),
                     ],
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                CommentsSection(comments: product.comments), // <-- ДАННЫЕ С СЕРВЕРА
+                const SizedBox(height: 10)
+              ],
             ),
-            SizedBox(height: 20),
-            CommentsSection(comments: productComments),
-            SizedBox(height: 10)
-          ],
-        ),
-      )        
-      
+          );
+        },
+      ),
+    );
+  }
 
-
+  // Вспомогательный виджет, чтобы не дублировать код
+  Widget _buildNutritionRow(String title1, String value1, String title2, String value2) {
+    return Row(
+      children: [
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title1, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(value1, style: const TextStyle(fontSize: 16)),
+        ])),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title2, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 4),
+          Text(value2, style: const TextStyle(fontSize: 16)),
+        ])),
+      ],
     );
   }
 }

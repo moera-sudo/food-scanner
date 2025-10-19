@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:foo/src/core/config/interceptors/auth_interceptor.dart';
 import 'package:foo/src/routes/app_routes.dart';
 import 'package:foo/src/themes/theme.dart';
-
+import 'package:foo/src/services/auth_service.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -10,6 +11,9 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextEditingController emailController = TextEditingController();
     final TextEditingController passwordController = TextEditingController();
+
+    final authInterceptor = AuthInterceptor();
+    final authService = AuthService(authInterceptor);
 
     return Scaffold(
       body: Padding(
@@ -51,9 +55,21 @@ class LoginPage extends StatelessWidget {
 
             // Login button
             ElevatedButton(
-              onPressed: () {
-                // TODO: добавить авторизацию
+              onPressed: () async {
+                final success = await authService.login(
+                  loginInput: emailController.text.trim(),
+                  password: passwordController.text.trim(),
+                );
+
+                if (success) {
+                  Navigator.pushReplacementNamed(context, AppRoutes.base);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Ошибка входа")),
+                  );
+                }
               },
+
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 textStyle: const TextStyle(fontSize: 18),

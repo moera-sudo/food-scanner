@@ -1,17 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:foo/src/models/comment.dart'; // <-- ИМПОРТИРУЕМ ГЛОБАЛЬНУЮ МОДЕЛЬ
 
-// ! Перенести модель комментариев в Models
-class Comment {
-  final String author;
-  final String text;
-  final DateTime date;
-
-  Comment({
-    required this.author,
-    required this.text,
-    required this.date,
-  });
-}
+// ! Локальная модель Comment удалена отсюда
 
 /// Отдельная карточка одного комментария
 class CommentTile extends StatelessWidget {
@@ -23,18 +13,18 @@ class CommentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-      color: Color(0xFF1C1C1C),
-      shape:LinearBorder.top(),
+      color: const Color(0xFF1C1C1C),
+      shape: LinearBorder.top(),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(comment.author,
+            // Отображаем ID пользователя вместо имени
+            Text("Автор #${comment.userId}",
                 style: Theme.of(context).textTheme.labelLarge),
             const SizedBox(height: 4),
-            Text(comment.text,
-                style: Theme.of(context).textTheme.bodyMedium),
+            Text(comment.text, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 6),
             Text(
               "${comment.date.toLocal()}".split(' ')[0],
