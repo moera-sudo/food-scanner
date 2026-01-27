@@ -1,60 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:foo/app.dart'; // Импортируем, чтобы получить themeNotifier
+import 'package:foo/src/services/auth_service.dart';
+import 'package:foo/src/routes/app_routes.dart';
 
-class ProfilePage extends StatelessWidget{
+class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(title: const Text("Профиль")),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Внешний вид", 
-              style: Theme.of(context).textTheme.headlineLarge),
-            SizedBox(height: 10),
-            ListTile(
-              leading: Icon(Icons.lightbulb_outline_sharp),
-              title: Text("Тема"),
-              subtitle: Text("Dark"),
-              trailing: IconButton(
-                  icon: Icon(Icons.arrow_forward_rounded),
-                  onPressed: () {
-                    Navigator.pushNamed(context, "");
-                  })
+            Text("Настройки", style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 10),
+            
+            // Тема
+            ValueListenableBuilder<ThemeMode>(
+              valueListenable: themeNotifier,
+              builder: (ctx, currentMode, _) {
+                return ListTile(
+                  leading: const Icon(Icons.brightness_6),
+                  title: const Text("Тема оформления"),
+                  subtitle: Text(currentMode == ThemeMode.dark ? "Темная" : "Светлая"),
+                  trailing: Switch(
+                    value: currentMode == ThemeMode.dark,
+                    onChanged: (isDark) {
+                      themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+                      // TODO: Можно сохранить выбор в SharedPrefs или отправить на бэк
+                    },
+                    activeColor: Theme.of(context).primaryColor,
+                  ),
+                );
+              },
             ),
-            SizedBox(height: 10),
-            Divider(),
-            SizedBox(height: 10),
-            Text(
-              "Аккаунт",
-              style: Theme.of(context).textTheme.headlineLarge),
-            SizedBox(height: 10),
+            
+            const Divider(),
+            const SizedBox(height: 10),
+            Text("Аккаунт", style: Theme.of(context).textTheme.headlineSmall),
+            
             ListTile(
-              leading: Icon(Icons.password),
-              title: Text("Сменить пароль"),
-              trailing: IconButton(
-                  icon: Icon(Icons.arrow_forward_rounded),
-                  onPressed: () {
-                    Navigator.pushNamed(context, "");
-                  })
-            ),
-            ListTile(
-              leading: Icon(Icons.logout),
-              title: Text("Выйти"),
-              trailing: IconButton(
-                  icon: Icon(Icons.arrow_forward_rounded),
-                  onPressed: () {
-                    Navigator.pushNamed(context, "");
-                  })
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text("Выйти", style: TextStyle(color: Colors.red)),
+              onTap: () async {
+                await AuthService.logout();
+                Navigator.pushNamedAndRemoveUntil(context, AppRoutes.welcome, (route) => false);
+              },
             ),
           ],
         ),
       ),
-
     );
   }
 }

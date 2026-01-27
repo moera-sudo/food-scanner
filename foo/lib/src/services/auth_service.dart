@@ -1,40 +1,37 @@
 import 'package:dio/dio.dart';
 import 'package:foo/src/api/api_client.dart';
-import 'package:foo/src/core/config/interceptors/auth_interceptor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final Dio _dio = ApiClient().dio;
-  final AuthInterceptor _authInterceptor;
+  
+  // Берем интерсептор прямо из ApiClient, он там уже один и правильный
+  final _authInterceptor = ApiClient().authInterceptor; 
 
-  AuthService(this._authInterceptor);
+  // Больше не нужно передавать интерсептор в конструктор
+  AuthService(); 
 
-  static const _accessTokenKey = 'access_token';
-  static const _refreshTokenKey = 'refresh_token';
+  static const _accessTokenKey = 'access_token'; // Ключ тот же
 
   static Future<bool> isAuthenticated() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_accessTokenKey);
-    print(token);
     return token != null && token.isNotEmpty;
   }
 
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_accessTokenKey);
-    await prefs.remove(_refreshTokenKey);
+    await prefs.remove('refresh_token');
+    
+    // Также чистим в памяти интерсептора
+    ApiClient().authInterceptor.setTokens(accessToken: '', refreshToken: ''); 
   }
 
-  /// Логин
-
-  Future<bool> login({
-    required String loginInput, // одно поле (email или username)
-    required String password,
-  }) async {
+  Future<bool> login({required String loginInput, required String password}) async {
     try {
-      // Проверяем, содержит ли '@'
       final isEmail = loginInput.contains('@');
-
+      
       final response = await _dio.post(
         '/user/auth',
         data: {
@@ -47,15 +44,16 @@ class AuthService {
 
       final access = response.data['access_token'];
       final refresh = response.data['refresh_token'];
+      final theme = response.data['theme_mode']; // Если нужно
 
       if (access != null && refresh != null) {
-        _authInterceptor.setTokens(
+        // Сохраняем токены через глобальный интерсептор
+        await _authInterceptor.setTokens(
           accessToken: access,
           refreshToken: refresh,
         );
         return true;
       }
-
       return false;
     } on DioException catch (e) {
       print('Login error: ${e.response?.data}');
@@ -63,13 +61,9 @@ class AuthService {
     }
   }
 
-  /// Регистрация
-  Future<bool> register({
-    required String name,
-    required String email,
-    required String password,
-  }) async {
-    try {
+  Future<bool> register({required String name, required String email, required String password}) async {
+      // (оставляем без изменений)
+      try {
       final response = await _dio.post(
         '/user/reg',
         data: {
@@ -78,11 +72,9 @@ class AuthService {
           'password': password,
         },
       );
-
       return response.statusCode == 201;
-    } on DioException catch (e) {
-      print('Register error: ${e.response?.data}');
-      return false;
+    } catch (e) {
+        return false;
     }
   }
 }

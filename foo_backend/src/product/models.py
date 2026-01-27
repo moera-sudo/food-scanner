@@ -1,10 +1,12 @@
 from tortoise import fields
 from tortoise.models import Model
 from tortoise.validators import MinValueValidator, MaxValueValidator
-
-from ..history.models import History
-
 import enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..history.models import History
+    from ..comments.models import Comment
 
 class NutriScoreEnum(enum.Enum):
     A = 'A'
@@ -13,13 +15,10 @@ class NutriScoreEnum(enum.Enum):
     D = 'D'
     E = 'E'
 
-
-
 class Product(Model):
-
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=64)
-    description = fields.TextField()
+    description = fields.TextField(null=True)
     
     calories = fields.IntField()
     fat = fields.IntField()
@@ -30,23 +29,21 @@ class Product(Model):
 
     created_at = fields.DatetimeField(auto_now_add=True)
 
-
     rating = fields.FloatField(
         validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
     nutriscore = fields.CharEnumField(NutriScoreEnum)
 
     image_url = fields.TextField()
+    
+    # НОВОЕ ПОЛЕ: Храним вектор признаков как список чисел (JSON array)
+    image_vector = fields.JSONField(null=True) 
 
     history: fields.ReverseRelation["History"]
+    comments: fields.ReverseRelation["Comment"]
 
     class Meta:
         table = 'products'
-        constraints  = [
-            "CHECK (rating >= 10 AND rating <= 1 )"
-        ]
 
     def __str__(self):
-        return f"Product: {self.id} Name: {self.name} Image_url: {self.image_url}"
-
-        
+        return f"Product: {self.id} Name: {self.name}"

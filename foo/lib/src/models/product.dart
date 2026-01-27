@@ -1,4 +1,3 @@
-// lib/src/models/product.dart
 import 'package:foo/src/models/comment.dart';
 
 class Product {
@@ -13,6 +12,7 @@ class Product {
   final int fiber;
   final double rating;
   final String nutriscore;
+  final String imageUrl; // <--- 1. Добавляем поле
   final List<Comment> comments;
 
   Product({
@@ -27,10 +27,10 @@ class Product {
     required this.fiber,
     required this.rating,
     required this.nutriscore,
+    required this.imageUrl, // <--- 2. Добавляем в конструктор
     required this.comments,
   });
 
-  // Вспомогательная функция для безопасного парсинга
   static int _parseInt(dynamic value) {
     if (value is int) return value;
     if (value is String) return int.tryParse(value) ?? 0;
@@ -44,18 +44,16 @@ class Product {
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Без названия',
       description: json['description'] ?? 'Нет описания',
-
-      // Используем нашу безопасную функцию для всех числовых полей
       calories: _parseInt(json['calories']),
       fat: _parseInt(json['fat']),
       protein: _parseInt(json['protein']),
       carbs: _parseInt(json['carbs']),
       sugar: _parseInt(json['sugar']),
       fiber: _parseInt(json['fiber']),
-
-      // Для double можно сделать аналогично, если нужно
       rating: (json['rating'] ?? 0.0).toDouble(),
       nutriscore: json['nutriscore'] ?? 'N/A',
+      // <--- 3. Мапим из JSON (бэкенд отправляет snake_case)
+      imageUrl: json['image_url'] ?? '', 
       comments: commentsList.map((c) => Comment.fromJson(c)).toList(),
     );
   }

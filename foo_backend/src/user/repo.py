@@ -65,7 +65,8 @@ class UserRepository:
                     "access_token": access_jwt,
                     "refresh_token": refresh_jwt,
                     "access_token_expire": access_expire ,
-                    "refresh_token_expire": refresh_expire
+                    "refresh_token_expire": refresh_expire,
+                    "theme_mode": user.theme_mode
                 }
 
                 logger.debug(f"Tokens generated for user id={user.id}")

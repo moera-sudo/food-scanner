@@ -9,5 +9,9 @@ class CommentCreate(BaseModel):
 class CommentResponse(BaseModel):
     id: int
     user_id: UUID
+    username: str
     text: str
     created_at: datetime
+
+    class Config:
+        from_attributes = True

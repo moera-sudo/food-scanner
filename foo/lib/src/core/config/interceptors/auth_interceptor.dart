@@ -1,106 +1,59 @@
 import 'package:dio/dio.dart';
-import 'package:foo/src/api/api_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// НЕ импортируем ApiClient здесь, чтобы избежать циклической зависимости, если возможно.
+// Но для рефреша нам нужен Dio. Лучше передать его в конструктор или брать аккуратно.
 
 class AuthInterceptor extends Interceptor {
   String? _accessToken;
   String? _refreshToken;
   bool _isRefreshing = false;
-
-  final List<Function(RequestOptions)> _retryQueue = [];
-
-  static const _accessTokenKey = 'access_token';
+  
+  // Ключи должны быть одинаковыми везде!
+  static const _accessTokenKey = 'access_token'; 
   static const _refreshTokenKey = 'refresh_token';
 
-  /// Устанавливаем и сохраняем токены
-  void setTokens({
-    required String accessToken,
-    required String refreshToken,
-  }) async {
+  // Метод для получения Dio (чтобы разорвать цикл, получим его лениво или создадим новый экземпляр только для рефреша)
+  Dio _getDioForRefresh() {
+    return Dio(BaseOptions(
+        baseUrl: 'http://10.0.2.2:8000/api', // Хардкод URL, чтобы не зависеть от ApiClient
+        headers: {'Content-Type': 'application/json'}
+    ));
+  }
+
+  Future<void> setTokens({required String accessToken, required String refreshToken}) async {
     _accessToken = accessToken;
     _refreshToken = refreshToken;
-
+    
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
-
-    print('✅ Tokens saved locally');
+    print('✅ Tokens saved (Memory + Prefs). Access: ${_accessToken?.substring(0, 10)}...');
   }
 
-  /// При старте приложения можно восстановить токены
   Future<void> loadTokens() async {
     final prefs = await SharedPreferences.getInstance();
     _accessToken = prefs.getString(_accessTokenKey);
     _refreshToken = prefs.getString(_refreshTokenKey);
-
-    if (_accessToken != null) {
-      print('🔁 Tokens restored from SharedPreferences');
-    }
+    print('🔁 Loaded tokens. Access present: ${_accessToken != null}');
   }
 
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
-    final skipAuthPaths = ['/login', '/register', '/refresh', '/ping'];
+    // Список путей, где токен НЕ нужен
+    final skipAuthPaths = ['/user/auth', '/user/reg', '/user/refresh', '/ping'];
 
-    if (!skipAuthPaths.any((path) => options.path.contains(path)) && _accessToken != null) {
+    final isSkipPath = skipAuthPaths.any((path) => options.path.contains(path));
+
+    if (!isSkipPath && _accessToken != null) {
       options.headers['Authorization'] = 'Bearer $_accessToken';
+      print('🔐 Added Bearer token to ${options.path}');
+    } else if (!isSkipPath && _accessToken == null) {
+      print('⚠️ No token available for ${options.path}');
     }
 
     super.onRequest(options, handler);
   }
-
-  @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401 && _refreshToken != null) {
-      final dio = ApiClient().dio;
-
-      if (_isRefreshing) {
-        _retryQueue.add((options) async {
-          options.headers['Authorization'] = 'Bearer $_accessToken';
-          return dio.fetch(options);
-        });
-        return;
-      }
-
-      _isRefreshing = true;
-
-      try {
-        final refreshResponse = await dio.post(
-          '/refresh',
-          data: {'refresh_token': _refreshToken},
-        );
-
-        final newAccessToken = refreshResponse.data['access_token'];
-
-        if (newAccessToken != null) {
-          _accessToken = newAccessToken;
-
-          // Сохраняем новый токен
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString(_accessTokenKey, newAccessToken);
-
-          // Повторяем исходный запрос
-          final retryRequest = err.requestOptions;
-          retryRequest.headers['Authorization'] = 'Bearer $_accessToken';
-
-          final Response retryResponse = await dio.fetch(retryRequest);
-
-          for (final queued in _retryQueue) {
-            await queued(retryRequest);
-          }
-          _retryQueue.clear();
-
-          handler.resolve(retryResponse);
-          return;
-        }
-      } catch (refreshError) {
-        handler.reject(refreshError as DioException);
-        return;
-      } finally {
-        _isRefreshing = false;
-      }
-    }
-
-    super.onError(err, handler);
-  }
+  
+  // onError для рефреша можно оставить, если он работал, 
+  // но лучше использовать _getDioForRefresh() внутри, чтобы не вызывать рекурсию ApiClient().dio
 }

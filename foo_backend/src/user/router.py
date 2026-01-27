@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from .repo import UserRepository
-from .schemas import Token, TokenData, TokensResponse, AuthRequest, RegRequest
+from .schemas import Token, TokenData, TokensResponse, AuthRequest, RegRequest, ThemeUpdate
+from ..dependencies import get_current_user
+from .models import User
 
 router = APIRouter(
     prefix='/user',
@@ -20,4 +22,6 @@ async def auth_view(data: AuthRequest):
 async def refresh_view(data: Token):
     return await UserRepository.refresh_token(data=data)
 
-
+@router.put('/theme', response_model=bool)
+async def update_theme_view(data: ThemeUpdate, user: User = Depends(get_current_user)):
+    return await UserRepository.update_theme(user=user, mode=data.theme_mode)

@@ -7,6 +7,7 @@ from .user.router import router as AuthRouter
 from .product.router import router as ProductRouter
 from .history.router import router as HistoryRouter
 from .search.router import router as SearchRouter
+from .analytics.router import router as AnalRouter
 from .comments.router import router as CommentRouter
 
 logger = logging.getLogger(__name__)
@@ -31,3 +32,4 @@ router.include_router(ProductRouter)
 router.include_router(HistoryRouter)
 router.include_router(SearchRouter)
 router.include_router(CommentRouter)
+router.include_router(AnalRouter)

@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:foo/src/pages/analyticspage/analytics_page.dart';
 import 'package:foo/src/pages/historypage/history_page.dart';
 import 'package:foo/src/pages/homepage/home_page.dart';
 import 'package:foo/src/themes/theme.dart';
 import 'package:foo/src/routes/app_routes.dart';
 import 'package:foo/src/routes/router.dart';
- 
 import 'package:foo/src/widgets/appBar/app_searching_bar.dart';
-import 'package:foo/src/widgets/navigation/app_nagivation_bar.dart';
-import 'package:foo/src/pages/undefinedpage/not_ready_page.dart';
-import 'package:foo/src/pages/authpage/auth_page.dart';
-import 'package:foo/src/pages/regpage/reg_page.dart';
-import 'package:foo/src/pages/welcomepage/welcome_page.dart';
+import 'package:foo/src/widgets/navigation/app_nagivation_bar.dart'; 
 
-// I'm gonna clear useless imports later
-
+// Глобальный ValueNotifier для темы (простой способ менять тему без провайдеров)
+final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.system);
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -22,39 +18,49 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp>{
-
-  int _currentIndex = 1;
+class _MyAppState extends State<MyApp> {
+  int _currentIndex = 1; // Главная страница по центру
   final TextEditingController _controller = TextEditingController();
 
-  final List<Widget> _pages = [ // Добавить Const
-    HistoryPage(),
-    HomePage(),
-    PlaceholderPage(),
+  final List<Widget> _pages = [
+    const HistoryPage(),
+    const HomePage(),
+    const AnalyticsPage(), // Добавлена страница аналитики
   ];
-  // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Foo',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: ThemeMode.dark,
-      home: Scaffold(
-        appBar: AppSearchingBar(controller: _controller),
-        body: _pages[_currentIndex],
-        bottomNavigationBar: AppBottomNav(
-          currentIndex: _currentIndex,
-          onTap: (index){
-            setState(() {
-              _currentIndex = index;
-            });
-          }),
-
-      ),
-      initialRoute: AppRoutes.base,
-      onGenerateRoute: AppRouter.generateRoute,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeNotifier,
+      builder: (_, mode, __) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'Foo',
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          themeMode: mode, // Используем значение из нотификатора
+          // Scaffold нужен только для основных табов.
+          // Для Auth/Reg/Product мы используем отдельные экраны через роутер.
+          home: Scaffold(
+            appBar: _currentIndex != 1 ? null : AppSearchingBar(controller: _controller), 
+            // Показываем поиск только на главной (или везде, как хочешь. Сейчас скрыл для истории/аналитики для чистоты)
+            body: IndexedStack( // Сохраняет состояние страниц при переключении
+              index: _currentIndex,
+              children: _pages,
+            ),
+            bottomNavigationBar: AppBottomNav(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+          ),
+          initialRoute: AppRoutes.base,
+          onGenerateRoute: AppRouter.generateRoute,
+        );
+      },
     );
   }
 }

@@ -22,6 +22,7 @@ class TokensResponse(BaseModel):
     token_type: Literal['bearer'] = 'bearer'
     access_token_expire: Optional[int]
     refresh_token_expire: Optional[int]
+    theme_mode: str = "system"
 
 
 class AuthRequest(BaseModel):
@@ -49,3 +50,7 @@ class RegRequest(BaseModel):
     email: str
     username: str
     password: str
+
+
+class ThemeUpdate(BaseModel):
+    theme_mode: Literal["light", "dark", "system"]
